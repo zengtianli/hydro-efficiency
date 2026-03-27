@@ -1,0 +1,6 @@
+name: efficiency
+title: 水效评估
+icon: "💧"
+order: 30
+description: 工业集聚区水效评估 (AHP+CRITIC+TOPSIS)
+version: 1.0.0

@@ -16,12 +16,15 @@ import streamlit as st
 
 def page_config(title: str, icon: str = "🌊", *, sidebar_state: str = "expanded"):
     """统一页面配置，所有水利应用使用 wide 布局 + 展开侧边栏。"""
-    st.set_page_config(
-        page_title=title,
-        page_icon=icon,
-        layout="wide",
-        initial_sidebar_state=sidebar_state,
-    )
+    try:
+        st.set_page_config(
+            page_title=title,
+            page_icon=icon,
+            layout="wide",
+            initial_sidebar_state=sidebar_state,
+        )
+    except st.errors.StreamlitAPIException:
+        pass  # Already set by toolkit host
 
 
 def excel_download(
