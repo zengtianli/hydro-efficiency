@@ -4,6 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.36+-FF4B4B.svg)](https://streamlit.io)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-hydro--efficiency.tianlizeng.cloud-brightgreen)](https://hydro-efficiency.tianlizeng.cloud)
 
 Water efficiency assessment for industrial parks using AHP + CRITIC + TOPSIS methodology across three circulation levels.
 
@@ -37,7 +38,7 @@ nohup streamlit run app.py --server.port 8503 --server.headless true &
 
 ## Hydro Toolkit Plugin
 
-This project is a plugin for [Hydro Toolkit](https://github.com/zengtianli/hydro-toolkit) and can also run standalone. Install it in the Toolkit by pasting this repo URL in the Plugin Manager.
+This project is a plugin for [Hydro Toolkit](https://github.com/zengtianli/hydro-toolkit) and can also run standalone. Install it in the Toolkit by pasting this repo URL in the Plugin Manager. You can also **[try it online](https://hydro-efficiency.tianlizeng.cloud)** — no install needed.
 
 ## License
 
