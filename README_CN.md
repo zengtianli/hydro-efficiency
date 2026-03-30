@@ -18,7 +18,7 @@
 
 ---
 
-![hydro-efficiency demo](docs/screenshots/demo.svg)
+![hydro-efficiency demo](docs/screenshots/demo.png)
 
         ---
 
