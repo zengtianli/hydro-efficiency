@@ -1,24 +1,52 @@
-# 💧 水效评估
+        # hydro-efficiency
 
-[![GitHub stars](https://img.shields.io/github/stars/zengtianli/hydro-efficiency)](https://github.com/zengtianli/hydro-efficiency)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.36+-FF4B4B.svg)](https://streamlit.io)
-[![在线演示](https://img.shields.io/badge/%E5%9C%A8%E7%BA%BF%E6%BC%94%E7%A4%BA-hydro--efficiency.tianlizeng.cloud-brightgreen)](https://hydro-efficiency.tianlizeng.cloud)
+        [English](README.md) | **中文**
 
-工业集聚区水效评估系统，采用 AHP + CRITIC + TOPSIS 方法，覆盖三循环层面。
+        工业园区水资源利用效率评价——AHP+CRITIC 组合赋权 + TOPSIS 综合排名。
 
-![screenshot](docs/screenshot.png)
+        [![在线演示](https://img.shields.io/badge/在线演示-hydro--efficiency.tianlizeng.cloud-blue?style=for-the-badge)](https://hydro-efficiency.tianlizeng.cloud)
+[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-yellow?style=for-the-badge)](https://python.org)
+        [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-## 功能特点
+        ---
 
-- **AHP + CRITIC 组合赋权** — 可调 α 参数控制主客观权重比例
-- **三循环层面评估** — 大循环（园区）、小循环（管网）、点循环（企业）
-- **TOPSIS 排名** — 企业级评分与分类
-- **内置示例数据** — 预载示例数据集，无需上传文件
-- **模板下载** — 导出空白模板用于自定义数据输入
+        ---
 
-## 快速开始
+### 无需安装，立即体验
+
+**https://hydro-efficiency.tianlizeng.cloud**
+
+---
+
+![hydro-efficiency demo](docs/screenshots/demo.svg)
+
+        ---
+
+        ## 功能一览
+
+        | 功能 | 说明 |
+        |------|------|
+        | **AHP + CRITIC 赋权** | 可调 α 参数融合主客观权重 |
+| **三层评价体系** | 园区 → 管网 → 企业级评价 |
+| **TOPSIS 排名** | 企业评分与等级排名 |
+| **内置样例数据** | 无需上传即可直接使用 |
+| **Excel 模板导出** | 下载空白模板填入自有数据 |
+
+        ## 安装
+
+        ```bash
+        git clone https://github.com/zengtianli/hydro-efficiency.git
+cd hydro-efficiency
+pip install -r requirements.txt
+        ```
+
+        ## 快速开始
+
+        ```bash
+        streamlit run app.py
+        ```
+
+        ## 自托管
 
 ```bash
 git clone https://github.com/zengtianli/hydro-efficiency.git
@@ -27,19 +55,13 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## 部署（VPS）
+或直接使用托管版本：**https://hydro-efficiency.tianlizeng.cloud**
 
-```bash
-git clone https://github.com/zengtianli/hydro-efficiency.git
-cd hydro-efficiency
-pip install -r requirements.txt
-nohup streamlit run app.py --server.port 8503 --server.headless true &
-```
+## 环境要求
 
-## Hydro Toolkit 插件
+        - Python 3.9+
+        - Streamlit 1.36+
 
-本项目是 [Hydro Toolkit](https://github.com/zengtianli/hydro-toolkit) 的插件，也可独立运行。在 Toolkit 的插件管理页面粘贴本仓库 URL 即可安装。也可以直接**[在线体验](https://hydro-efficiency.tianlizeng.cloud)**，无需安装。
+        ## License
 
-## 许可证
-
-MIT
+        MIT

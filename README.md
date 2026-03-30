@@ -1,24 +1,52 @@
-# 💧 Hydro Efficiency — Water Efficiency Assessment
+        # hydro-efficiency
 
-[![GitHub stars](https://img.shields.io/github/stars/zengtianli/hydro-efficiency)](https://github.com/zengtianli/hydro-efficiency)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.36+-FF4B4B.svg)](https://streamlit.io)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-hydro--efficiency.tianlizeng.cloud-brightgreen)](https://hydro-efficiency.tianlizeng.cloud)
+        **English** | [中文](README_CN.md)
 
-Water efficiency assessment for industrial parks using AHP + CRITIC + TOPSIS methodology across three circulation levels.
+        Industrial park water use efficiency assessment — AHP+CRITIC combined weighting with TOPSIS ranking.
 
-![screenshot](docs/screenshot.png)
+        [![Live Demo](https://img.shields.io/badge/Live_Demo-hydro--efficiency.tianlizeng.cloud-blue?style=for-the-badge)](https://hydro-efficiency.tianlizeng.cloud)
+[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-yellow?style=for-the-badge)](https://python.org)
+        [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-## Features
+        ---
 
-- **AHP + CRITIC combined weighting** — adjustable α parameter for subjective/objective weight blending
-- **Three-level evaluation** — macro (park), meso (pipeline), and micro (enterprise) circulation
-- **TOPSIS ranking** — enterprise-level scoring and classification
-- **Built-in sample data** — pre-loaded example dataset, no file upload required
-- **Excel template download** — export blank template for custom data input
+        ---
 
-## Quick Start
+### Try it now — no install needed
+
+**https://hydro-efficiency.tianlizeng.cloud**
+
+---
+
+![hydro-efficiency demo](docs/screenshots/demo.svg)
+
+        ---
+
+        ## What can hydro-efficiency do?
+
+        | Feature | Description |
+        |---------|-------------|
+        | **AHP + CRITIC weighting** | Adjustable α blends subjective and objective weights |
+| **3-tier assessment** | Park-wide → pipeline → enterprise level evaluation |
+| **TOPSIS ranking** | Enterprise scoring and classification ranking |
+| **Pre-loaded sample data** | Ready to use without any file uploads |
+| **Excel template export** | Download blank template for your own data |
+
+        ## Install
+
+        ```bash
+        git clone https://github.com/zengtianli/hydro-efficiency.git
+cd hydro-efficiency
+pip install -r requirements.txt
+        ```
+
+        ## Quick Start
+
+        ```bash
+        streamlit run app.py
+        ```
+
+        ## Self-host
 
 ```bash
 git clone https://github.com/zengtianli/hydro-efficiency.git
@@ -27,19 +55,13 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Deploy (VPS)
+Or use the hosted version: **https://hydro-efficiency.tianlizeng.cloud**
 
-```bash
-git clone https://github.com/zengtianli/hydro-efficiency.git
-cd hydro-efficiency
-pip install -r requirements.txt
-nohup streamlit run app.py --server.port 8503 --server.headless true &
-```
+## Requirements
 
-## Hydro Toolkit Plugin
+        - Python 3.9+
+        - Streamlit 1.36+
 
-This project is a plugin for [Hydro Toolkit](https://github.com/zengtianli/hydro-toolkit) and can also run standalone. Install it in the Toolkit by pasting this repo URL in the Plugin Manager. You can also **[try it online](https://hydro-efficiency.tianlizeng.cloud)** — no install needed.
+        ## License
 
-## License
-
-MIT
+        MIT
