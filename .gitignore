@@ -24,3 +24,8 @@ build/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+
+# Baseline (auto-added by /groom)
+*$py.class
+Thumbs.db
+*.swp
