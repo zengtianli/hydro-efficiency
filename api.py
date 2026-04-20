@@ -7,17 +7,26 @@ from __future__ import annotations
 
 import base64
 import io
-import json
 import sys
 import time
 from pathlib import Path
-from urllib.parse import quote
 
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+
+# --- shared helpers (see ~/Dev/devtools/lib/hydro_api_helpers.py) ---
+for _p in [Path.home() / "Dev/devtools/lib", Path("/var/www/devtools/lib")]:
+    if _p.exists():
+        sys.path.insert(0, str(_p))
+        break
+from hydro_api_helpers import (  # noqa: E402
+    cjk_header_safe,
+    cors_origins,
+    df_to_json_safe,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -44,11 +53,7 @@ app = FastAPI(title="hydro-efficiency-api", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3113",
-        "http://127.0.0.1:3113",
-        "https://hydro-efficiency.tianlizeng.cloud",
-    ],
+    allow_origins=cors_origins("hydro-efficiency", 3113),
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
@@ -104,14 +109,6 @@ def _load_from_sample():
     micro_dict = {year: func() for year, func in MICRO_FUNCS.items()}
     ahp_matrix_df = default_ahp_matrix()
     return df_macro, df_meso, micro_dict, ahp_matrix_df
-
-
-def _df_to_json_safe(df: pd.DataFrame, limit: int | None = None) -> dict:
-    """DataFrame → {columns, rows, totalRows}. Handles NaN / datetime / numpy types."""
-    total = len(df)
-    sliced = df.head(limit) if limit is not None and total > limit else df
-    parsed = json.loads(sliced.to_json(orient="split", date_format="iso", force_ascii=False))
-    return {"columns": parsed["columns"], "rows": parsed["data"], "totalRows": total}
 
 
 def _compute_efficiency_core(
@@ -296,10 +293,10 @@ def _run_efficiency_full(
     elapsed_ms = int((time.perf_counter() - started) * 1000)
 
     ind_micro_by_year_json = {
-        year: _df_to_json_safe(df) for year, df in core["ind_micro_by_year"].items()
+        year: df_to_json_safe(df) for year, df in core["ind_micro_by_year"].items()
     }
     micro_raw_by_year_json = {
-        year: _df_to_json_safe(df) for year, df in core["micro_dict_raw"].items()
+        year: df_to_json_safe(df) for year, df in core["micro_dict_raw"].items()
     }
 
     # Charts
@@ -330,14 +327,14 @@ def _run_efficiency_full(
 
     results_payload: dict[str, dict] = {}
     for name, df in core["sheets"].items():
-        results_payload[name] = _df_to_json_safe(df)
+        results_payload[name] = df_to_json_safe(df)
 
     return {
         "preview": {
-            "macro_raw": _df_to_json_safe(core["df_macro_raw"]),
-            "macro_indicators": _df_to_json_safe(core["ind_macro"]),
-            "meso_raw": _df_to_json_safe(core["df_meso_raw"]),
-            "meso_indicators": _df_to_json_safe(core["ind_meso"]),
+            "macro_raw": df_to_json_safe(core["df_macro_raw"]),
+            "macro_indicators": df_to_json_safe(core["ind_macro"]),
+            "meso_raw": df_to_json_safe(core["df_meso_raw"]),
+            "meso_indicators": df_to_json_safe(core["ind_meso"]),
             "micro_raw_by_year": micro_raw_by_year_json,
             "micro_indicators_by_year": ind_micro_by_year_json,
         },
@@ -400,7 +397,7 @@ async def compute(
             "X-Cr": f"{meta['cr']:.4f}",
             "X-Consistent": "1" if meta["consistent"] else "0",
             "X-Enterprises": str(meta["enterprises"]),
-            "X-Latest-Year": quote(str(meta["latest_year"])),
+            "X-Latest-Year": cjk_header_safe(meta["latest_year"]),
             "Access-Control-Expose-Headers": "X-Years, X-Cr, X-Consistent, X-Enterprises, X-Latest-Year, Content-Disposition",
         },
     )
