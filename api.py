@@ -5,8 +5,11 @@ Run:
 """
 from __future__ import annotations
 
+import base64
 import io
+import json
 import sys
+import time
 from pathlib import Path
 from urllib.parse import quote
 
@@ -14,7 +17,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -103,16 +106,26 @@ def _load_from_sample():
     return df_macro, df_meso, micro_dict, ahp_matrix_df
 
 
-def _run_efficiency(
+def _df_to_json_safe(df: pd.DataFrame, limit: int | None = None) -> dict:
+    """DataFrame → {columns, rows, totalRows}. Handles NaN / datetime / numpy types."""
+    total = len(df)
+    sliced = df.head(limit) if limit is not None and total > limit else df
+    parsed = json.loads(sliced.to_json(orient="split", date_format="iso", force_ascii=False))
+    return {"columns": parsed["columns"], "rows": parsed["data"], "totalRows": total}
+
+
+def _compute_efficiency_core(
     df_macro: pd.DataFrame | None,
     df_meso: pd.DataFrame | None,
     micro_dict: dict,
     ahp_matrix_df: pd.DataFrame,
     alpha: float,
-) -> tuple[bytes, dict]:
-    """Port of app.py's multi-tab compute into a single pipeline.
+) -> dict:
+    """Core pipeline. Returns a dict of all intermediate + final DataFrames + scalars.
 
-    Returns (xlsx_bytes, summary_meta).
+    Keys: ind_macro, ind_meso, ind_micro_by_year (dict[year]=df),
+          merged_clean, weight_df, pilot_df, layer_w_df, topsis_df,
+          xlsx_bytes, meta.
     """
     if df_macro is None or df_meso is None or not micro_dict:
         raise HTTPException(
@@ -202,18 +215,26 @@ def _run_efficiency(
     scores, closeness = topsis_evaluate(data_mat, w_micro, dirs_micro)
     topsis_df = build_result_table(names, scores, closeness)
 
+    topsis_sheet_name = f"TOPSIS企业评价({latest_year})"
+
     sheets = {
         "年度综合指标矩阵": merged_clean,
         "权重详情": weight_df,
         "分层评分与试点汇总": pilot_df,
         "层面权重": layer_w_df,
-        f"TOPSIS企业评价({latest_year})": topsis_df,
+        topsis_sheet_name: topsis_df,
     }
 
     out = io.BytesIO()
     with pd.ExcelWriter(out, engine="openpyxl") as writer:
         for name, df in sheets.items():
             df.to_excel(writer, sheet_name=name[:31], index=False)
+    xlsx_bytes = out.getvalue()
+
+    # Per-year micro indicators (C7-C10) for Tab 1 preview
+    ind_micro_by_year: dict[str, pd.DataFrame] = {}
+    for year, df_raw in micro_dict.items():
+        ind_micro_by_year[year] = calc_micro_indicators(df_raw)
 
     meta = {
         "years": int(len(merged_clean)),
@@ -222,7 +243,122 @@ def _run_efficiency(
         "enterprises": int(len(names)),
         "latest_year": str(latest_year),
     }
-    return out.getvalue(), meta
+
+    return {
+        "ind_macro": ind_macro,
+        "ind_meso": ind_meso,
+        "ind_micro_by_year": ind_micro_by_year,
+        "df_macro_raw": df_macro,
+        "df_meso_raw": df_meso,
+        "micro_dict_raw": micro_dict,
+        "merged_clean": merged_clean,
+        "weight_df": weight_df,
+        "pilot_df": pilot_df,
+        "layer_w_df": layer_w_df,
+        "topsis_df": topsis_df,
+        "topsis_sheet_name": topsis_sheet_name,
+        "indicator_cols": indicator_cols,
+        "w_ahp": w_ahp,
+        "w_critic": w_critic,
+        "w_combined": w_combined,
+        "layer_weights": layer_weights,
+        "xlsx_bytes": xlsx_bytes,
+        "sheets": sheets,
+        "meta": meta,
+    }
+
+
+def _run_efficiency(
+    df_macro: pd.DataFrame | None,
+    df_meso: pd.DataFrame | None,
+    micro_dict: dict,
+    ahp_matrix_df: pd.DataFrame,
+    alpha: float,
+) -> tuple[bytes, dict]:
+    """Port of app.py's multi-tab compute into a single pipeline.
+
+    Returns (xlsx_bytes, summary_meta).
+    """
+    out = _compute_efficiency_core(df_macro, df_meso, micro_dict, ahp_matrix_df, alpha)
+    return out["xlsx_bytes"], out["meta"]
+
+
+def _run_efficiency_full(
+    df_macro: pd.DataFrame | None,
+    df_meso: pd.DataFrame | None,
+    micro_dict: dict,
+    ahp_matrix_df: pd.DataFrame,
+    alpha: float,
+) -> dict:
+    """JSON-friendly full payload for Next.js client: preview / meta / results / charts."""
+    started = time.perf_counter()
+    core = _compute_efficiency_core(df_macro, df_meso, micro_dict, ahp_matrix_df, alpha)
+    elapsed_ms = int((time.perf_counter() - started) * 1000)
+
+    ind_micro_by_year_json = {
+        year: _df_to_json_safe(df) for year, df in core["ind_micro_by_year"].items()
+    }
+    micro_raw_by_year_json = {
+        year: _df_to_json_safe(df) for year, df in core["micro_dict_raw"].items()
+    }
+
+    # Charts
+    weights_chart = [
+        {
+            "指标": ind,
+            "AHP": round(float(core["w_ahp"][i]), 4),
+            "CRITIC": round(float(core["w_critic"][i]), 4),
+            "组合": round(float(core["w_combined"][i]), 4),
+        }
+        for i, ind in enumerate(core["indicator_cols"])
+    ]
+    layer_weights_chart = [
+        {"层面": name, "权重": round(float(v), 4)}
+        for name, v in core["layer_weights"].items()
+    ]
+    grade_counts_series = core["topsis_df"]["水效等级"].value_counts()
+    grade_color_map = {
+        "水效领跑": "#1890ff",
+        "水效先进": "#52c41a",
+        "水效达标": "#faad14",
+        "水效待改进": "#f5222d",
+    }
+    grade_distribution_chart = [
+        {"grade": str(name), "count": int(cnt), "color": grade_color_map.get(str(name), "#999")}
+        for name, cnt in grade_counts_series.items()
+    ]
+
+    results_payload: dict[str, dict] = {}
+    for name, df in core["sheets"].items():
+        results_payload[name] = _df_to_json_safe(df)
+
+    return {
+        "preview": {
+            "macro_raw": _df_to_json_safe(core["df_macro_raw"]),
+            "macro_indicators": _df_to_json_safe(core["ind_macro"]),
+            "meso_raw": _df_to_json_safe(core["df_meso_raw"]),
+            "meso_indicators": _df_to_json_safe(core["ind_meso"]),
+            "micro_raw_by_year": micro_raw_by_year_json,
+            "micro_indicators_by_year": ind_micro_by_year_json,
+        },
+        "meta": {
+            "years": core["meta"]["years"],
+            "cr": core["meta"]["cr"],
+            "consistent": core["meta"]["consistent"],
+            "enterprises": core["meta"]["enterprises"],
+            "latestYear": core["meta"]["latest_year"],
+            "elapsedMs": elapsed_ms,
+            "xlsxBytes": len(core["xlsx_bytes"]),
+            "topsisSheetName": core["topsis_sheet_name"],
+        },
+        "results": results_payload,
+        "charts": {
+            "weights": weights_chart,
+            "layerWeights": layer_weights_chart,
+            "gradeDistribution": grade_distribution_chart,
+        },
+        "xlsxBase64": base64.b64encode(core["xlsx_bytes"]).decode("ascii"),
+    }
 
 
 @app.post("/api/compute")
@@ -230,6 +366,7 @@ async def compute(
     file: UploadFile | None = File(None, description="xlsx — 大循环/小循环/点循环-YYYY年/AHP判断矩阵"),
     alpha: float = Form(0.5, ge=0.0, le=1.0, description="AHP 权重占比 (0-1)"),
     use_sample: bool = Form(False, description="忽略上传，用内置示例数据"),
+    format: str = Form("xlsx", description="xlsx (binary) | json (preview+results+charts+base64)"),
 ) -> Response:
     if use_sample or file is None:
         df_macro, df_meso, micro_dict, ahp_matrix_df = _load_from_sample()
@@ -240,6 +377,11 @@ async def compute(
         df_macro, df_meso, micro_dict, ahp_matrix_df = _load_from_upload(content)
 
     try:
+        if format == "json":
+            payload = _run_efficiency_full(
+                df_macro, df_meso, micro_dict, ahp_matrix_df, alpha
+            )
+            return JSONResponse(content=payload)
         xlsx_bytes, meta = _run_efficiency(df_macro, df_meso, micro_dict, ahp_matrix_df, alpha)
     except HTTPException:
         raise
